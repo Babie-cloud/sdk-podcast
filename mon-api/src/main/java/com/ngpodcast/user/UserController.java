@@ -1,14 +1,12 @@
 package com.ngpodcast.user;
 
 import com.ngpodcast.auth.dto.AuthResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/users")
-@RequiredArgsConstructor
 public class UserController {
 
     @GetMapping("/me")
