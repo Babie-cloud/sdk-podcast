@@ -1,4 +1,4 @@
-package com.ngpodcast.podcast.entity;
+package com.ngpodcast.component.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -42,29 +42,27 @@ public class Episode {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // ── Constructeur ──────────────────────────────────────────
     public Episode() {}
 
-    // ── Getters / Setters ────────────────────────────────────
-    public String    getId()             { return id; }
-    public Podcast   getPodcast()        { return podcast; }
-    public String    getTitle()          { return title; }
-    public String    getDescription()    { return description; }
-    public String    getAudioUrl()       { return audioUrl; }
-    public Integer   getDuration()       { return duration; }
-    public Long      getFileSize()       { return fileSize; }
-    public Integer   getEpisodeNumber()  { return episodeNumber; }
-    public String    getStatus()         { return status; }
+    public String getId()                { return id; }
+    public Podcast getPodcast()          { return podcast; }
+    public String getTitle()             { return title; }
+    public String getDescription()       { return description; }
+    public String getAudioUrl()          { return audioUrl; }
+    public Integer getDuration()         { return duration; }
+    public Long getFileSize()            { return fileSize; }
+    public Integer getEpisodeNumber()    { return episodeNumber; }
+    public String getStatus()            { return status; }
     public LocalDateTime getPublishedAt(){ return publishedAt; }
     public LocalDateTime getCreatedAt()  { return createdAt; }
 
-    public void setPodcast(Podcast podcast)          { this.podcast = podcast; }
-    public void setTitle(String title)               { this.title = title; }
-    public void setDescription(String description)   { this.description = description; }
-    public void setAudioUrl(String audioUrl)         { this.audioUrl = audioUrl; }
-    public void setDuration(Integer duration)        { this.duration = duration; }
-    public void setFileSize(Long fileSize)           { this.fileSize = fileSize; }
-    public void setEpisodeNumber(Integer n)          { this.episodeNumber = n; }
-    public void setStatus(String status)             { this.status = status; }
-    public void setPublishedAt(LocalDateTime date)   { this.publishedAt = date; }
+    public void setPodcast(Podcast p)          { this.podcast = p; }
+    public void setTitle(String title)         { this.title = title; }
+    public void setDescription(String d)       { this.description = d; }
+    public void setAudioUrl(String url)        { this.audioUrl = url; }
+    public void setDuration(Integer d)         { this.duration = d; }
+    public void setFileSize(Long s)            { this.fileSize = s; }
+    public void setEpisodeNumber(Integer n)    { this.episodeNumber = n; }
+    public void setStatus(String status)       { this.status = status; }
+    public void setPublishedAt(LocalDateTime d){ this.publishedAt = d; }
 }

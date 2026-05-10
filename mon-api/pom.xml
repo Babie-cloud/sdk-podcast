@@ -51,12 +51,6 @@
     <artifactId>flyway-core</artifactId>
 </dependency>
 
-<!-- Pour PostgreSQL, cette dépendance suffit avec Spring Boot 3.2+ -->
-<dependency>
-    <groupId>org.flywaydb</groupId>
-    <artifactId>flyway-database-postgresql</artifactId>
-    <version>10.10.0</version>
-</dependency>
 
         <!-- Utils -->
         <dependency>

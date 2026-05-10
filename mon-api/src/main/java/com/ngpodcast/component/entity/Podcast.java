@@ -1,4 +1,4 @@
-package com.ngpodcast.podcast.entity;
+package com.ngpodcast.component.entity;
 
 import com.ngpodcast.user.User;
 import jakarta.persistence.*;
@@ -45,29 +45,27 @@ public class Podcast {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // ── Constructeur ──────────────────────────────────────────
     public Podcast() {}
 
-    // ── Getters / Setters ────────────────────────────────────
-    public String getId()                  { return id; }
-    public User   getUser()                { return user; }
-    public String getTitle()               { return title; }
-    public String getDescription()         { return description; }
-    public String getCoverUrl()            { return coverUrl; }
-    public String getCategory()            { return category; }
-    public String getLanguage()            { return language; }
-    public String getStatus()              { return status; }
-    public List<Episode> getEpisodes()     { return episodes; }
-    public LocalDateTime getCreatedAt()    { return createdAt; }
-    public LocalDateTime getUpdatedAt()    { return updatedAt; }
+    public String getId()               { return id; }
+    public User getUser()               { return user; }
+    public String getTitle()            { return title; }
+    public String getDescription()      { return description; }
+    public String getCoverUrl()         { return coverUrl; }
+    public String getCategory()         { return category; }
+    public String getLanguage()         { return language; }
+    public String getStatus()           { return status; }
+    public List<Episode> getEpisodes()  { return episodes; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    public void setUser(User user)                  { this.user = user; }
-    public void setTitle(String title)              { this.title = title; }
-    public void setDescription(String description)  { this.description = description; }
-    public void setCoverUrl(String coverUrl)         { this.coverUrl = coverUrl; }
-    public void setCategory(String category)         { this.category = category; }
-    public void setLanguage(String language)         { this.language = language; }
-    public void setStatus(String status)             { this.status = status; }
+    public void setUser(User user)                 { this.user = user; }
+    public void setTitle(String title)             { this.title = title; }
+    public void setDescription(String d)           { this.description = d; }
+    public void setCoverUrl(String url)            { this.coverUrl = url; }
+    public void setCategory(String category)       { this.category = category; }
+    public void setLanguage(String language)       { this.language = language; }
+    public void setStatus(String status)           { this.status = status; }
 
     @PreUpdate
     public void onUpdate() { this.updatedAt = LocalDateTime.now(); }

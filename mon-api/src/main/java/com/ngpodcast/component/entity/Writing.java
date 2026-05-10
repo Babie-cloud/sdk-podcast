@@ -1,4 +1,4 @@
-package com.ngpodcast.writing.entity;
+package com.ngpodcast.component.entity;
 
 import com.ngpodcast.user.User;
 import jakarta.persistence.*;
@@ -43,30 +43,28 @@ public class Writing {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // ── Constructeur ──────────────────────────────────────────
     public Writing() {}
 
-    // ── Getters / Setters ────────────────────────────────────
-    public String getId()              { return id; }
-    public User   getUser()            { return user; }
-    public String getTitle()           { return title; }
-    public String getContent()         { return content; }
-    public String getType()            { return type; }
-    public String getAudioUrl()        { return audioUrl; }
-    public String getCoverUrl()        { return coverUrl; }
-    public String getStatus()          { return status; }
-    public Integer getViews()          { return views; }
-    public LocalDateTime getCreatedAt(){ return createdAt; }
-    public LocalDateTime getUpdatedAt(){ return updatedAt; }
+    public String getId()               { return id; }
+    public User getUser()               { return user; }
+    public String getTitle()            { return title; }
+    public String getContent()          { return content; }
+    public String getType()             { return type; }
+    public String getAudioUrl()         { return audioUrl; }
+    public String getCoverUrl()         { return coverUrl; }
+    public String getStatus()           { return status; }
+    public Integer getViews()           { return views; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    public void setUser(User user)                 { this.user = user; }
-    public void setTitle(String title)             { this.title = title; }
-    public void setContent(String content)         { this.content = content; }
-    public void setType(String type)               { this.type = type; }
-    public void setAudioUrl(String audioUrl)       { this.audioUrl = audioUrl; }
-    public void setCoverUrl(String coverUrl)       { this.coverUrl = coverUrl; }
-    public void setStatus(String status)           { this.status = status; }
-    public void setViews(Integer views)            { this.views = views; }
+    public void setUser(User user)           { this.user = user; }
+    public void setTitle(String title)       { this.title = title; }
+    public void setContent(String content)   { this.content = content; }
+    public void setType(String type)         { this.type = type; }
+    public void setAudioUrl(String url)      { this.audioUrl = url; }
+    public void setCoverUrl(String url)      { this.coverUrl = url; }
+    public void setStatus(String status)     { this.status = status; }
+    public void setViews(Integer views)      { this.views = views; }
 
     @PreUpdate
     public void onUpdate() { this.updatedAt = LocalDateTime.now(); }
