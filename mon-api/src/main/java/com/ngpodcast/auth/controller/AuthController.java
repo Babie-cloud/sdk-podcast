@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
     private final AuthService authService;
@@ -28,8 +27,13 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
-        authService.resetPassword(req);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<PasswordResetInitResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        return ResponseEntity.ok(authService.requestPasswordReset(req));
+    }
+
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<Void> confirmReset(@Valid @RequestBody ResetPasswordConfirmRequest req) {
+        authService.confirmPasswordReset(req);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -8,11 +8,22 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import org.springframework.web.server.ResponseStatusException;
+
 import java.net.URI;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail responseStatus(ResponseStatusException ex, WebRequest request) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, ex.getReason() != null ? ex.getReason() : status.getReasonPhrase());
+        pd.setTitle(status.getReasonPhrase());
+        pd.setInstance(URI.create(path(request)));
+        return pd;
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail badCredentials(BadCredentialsException ex, WebRequest request) {

@@ -32,9 +32,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/login", "/auth/register", "/auth/reset-password", "/auth/reset-password/confirm")
                     .permitAll()
                 .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/podcasts/mine").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/writings/mine").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings/mine").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/podcasts", "/api/podcasts/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/writings", "/api/writings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings", "/api/storytellings/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -44,7 +51,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        // localhost vs 127.0.0.1 vs ::1 ne renvoient pas la même Origin — motifs pour le dev.
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://[::1]:*"
+        ));
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

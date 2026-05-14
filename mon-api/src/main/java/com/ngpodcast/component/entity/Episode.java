@@ -1,4 +1,4 @@
-package com.ngpodcast.component.entity;
+package  com.ngpodcast.component.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

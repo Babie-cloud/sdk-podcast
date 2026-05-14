@@ -1,6 +1,6 @@
 CREATE TABLE episodes (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    podcast_id      UUID            NOT NULL REFERENCES podcasts(id) ON DELETE CASCADE,
+    id              VARCHAR(36)     PRIMARY KEY,
+    podcast_id      VARCHAR(36)     NOT NULL REFERENCES podcasts(id) ON DELETE CASCADE,
     title           VARCHAR(200)    NOT NULL,
     description     TEXT,
     audio_url       TEXT,
