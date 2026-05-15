@@ -1,6 +1,8 @@
 package com.ngpodcast.component.service;
 
-import com.ngpodcast.component.dto.*;
+import com.ngpodcast.component.dto.CreateStorytellingRequest;
+import com.ngpodcast.component.dto.StorytellingDto;
+import com.ngpodcast.component.dto.UpdateStorytellingRequest;
 import com.ngpodcast.component.entity.Storytelling;
 import com.ngpodcast.component.repository.StorytellingRepository;
 import com.ngpodcast.user.User;
@@ -62,6 +64,30 @@ public class StorytellingService {
         }
         Storytelling saved = storytellingRepository.save(st);
         return toDto(saved);
+    }
+
+    @Transactional
+    public StorytellingDto update(User user, String id, UpdateStorytellingRequest req) {
+        Storytelling st = storytellingRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Introuvable."));
+        User owner = st.getUser();
+        if (owner == null || !owner.getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
+        }
+        st.setTitle(req.title().trim());
+        st.setContent(req.content() != null ? req.content() : "");
+        st.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : st.getType());
+        st.setStatus(normalizeStorytellingStatus(req.status()));
+        if (req.anonymous() != null) {
+            st.setAnonymous(req.anonymous());
+        }
+        if (req.audioUrl() != null && !req.audioUrl().isBlank()) {
+            st.setAudioUrl(req.audioUrl().trim());
+        }
+        if (req.coverUrl() != null && !req.coverUrl().isBlank()) {
+            st.setCoverUrl(req.coverUrl().trim());
+        }
+        return toDto(storytellingRepository.save(st));
     }
 
     @Transactional

@@ -8,5 +8,6 @@ public record EpisodeDto(
         String audioUrl,
         int duration,
         String podcastId,
+        String status,
         LocalDateTime createdAt
 ) {}

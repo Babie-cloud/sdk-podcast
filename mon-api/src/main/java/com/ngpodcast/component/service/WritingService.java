@@ -1,6 +1,8 @@
 package com.ngpodcast.component.service;
 
-import com.ngpodcast.component.dto.*;
+import com.ngpodcast.component.dto.CreateWritingRequest;
+import com.ngpodcast.component.dto.UpdateWritingRequest;
+import com.ngpodcast.component.dto.WritingDto;
 import com.ngpodcast.component.entity.Writing;
 import com.ngpodcast.component.repository.WritingRepository;
 import com.ngpodcast.user.User;
@@ -65,6 +67,26 @@ public class WritingService {
         }
         Writing saved = writingRepository.save(w);
         return toDto(saved);
+    }
+
+    @Transactional
+    public WritingDto update(User user, String id, UpdateWritingRequest req) {
+        Writing w = writingRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Introuvable."));
+        if (!w.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
+        }
+        w.setTitle(req.title().trim());
+        w.setContent(req.content());
+        w.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : w.getType());
+        w.setStatus(normalizeWritingStatus(req.status()));
+        if (req.audioUrl() != null && !req.audioUrl().isBlank()) {
+            w.setAudioUrl(req.audioUrl().trim());
+        }
+        if (req.coverUrl() != null && !req.coverUrl().isBlank()) {
+            w.setCoverUrl(req.coverUrl().trim());
+        }
+        return toDto(writingRepository.save(w));
     }
 
     @Transactional

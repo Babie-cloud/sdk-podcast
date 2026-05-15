@@ -59,7 +59,7 @@ public class PodcastService {
     public Optional<PodcastDetailDto> findById(String id, User viewer) {
         return podcastRepository.findById(id)
                 .filter(p -> canRead(p, viewer))
-                .map(this::toDetail);
+                .map(p -> toDetail(p, viewer));
     }
 
     @Transactional
@@ -94,7 +94,7 @@ public class PodcastService {
             saved = podcastRepository.save(saved);
         }
 
-        return toDetail(saved);
+        return toDetail(saved, user);
     }
 
     @Transactional
@@ -141,7 +141,96 @@ public class PodcastService {
         episodeRepository.save(episode);
         podcastRepository.save(podcast);
 
-        return toDetail(podcastRepository.findById(podcastId).orElseThrow());
+        return toDetail(podcastRepository.findById(podcastId).orElseThrow(), user);
+    }
+
+    @Transactional
+    public PodcastDetailDto patchPodcast(User user, String podcastId, PodcastPatchRequest patch) {
+        Podcast p = podcastRepository.findById(podcastId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Podcast introuvable."));
+        if (!p.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
+        }
+        if (patch.title() != null && !patch.title().isBlank()) {
+            p.setTitle(patch.title().trim());
+        }
+        if (patch.description() != null) {
+            p.setDescription(patch.description());
+        }
+        if (patch.status() != null && !patch.status().isBlank()) {
+            p.setStatus(normalizePodcastStatus(patch.status()));
+        }
+        if (patch.category() != null) {
+            if (patch.category().isBlank()) {
+                p.setCategory(null);
+            } else {
+                p.setCategory(patch.category().trim());
+            }
+        }
+        if (patch.language() != null && !patch.language().isBlank()) {
+            p.setLanguage(patch.language().trim().toLowerCase(Locale.ROOT));
+        }
+        podcastRepository.save(p);
+        return toDetail(podcastRepository.findById(podcastId).orElseThrow(), user);
+    }
+
+    @Transactional
+    public PodcastDetailDto patchEpisode(
+            User user,
+            String podcastId,
+            String episodeId,
+            EpisodePatchRequest patch
+    ) {
+        Podcast podcast = podcastRepository.findById(podcastId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Podcast introuvable."));
+        if (!podcast.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
+        }
+        Episode ep = episodeRepository.findById(episodeId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Épisode introuvable."));
+        if (ep.getPodcast() == null || !ep.getPodcast().getId().equals(podcastId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Épisode invalide pour ce podcast.");
+        }
+
+        if (patch.title() != null && !patch.title().isBlank()) {
+            ep.setTitle(patch.title().trim());
+        }
+        if (patch.description() != null) {
+            ep.setDescription(patch.description());
+        }
+        if (patch.publishNow() != null) {
+            if (patch.publishNow()) {
+                ep.setStatus("PUBLISHED");
+                ep.setPublishedAt(LocalDateTime.now());
+                podcast.setStatus("PUBLISHED");
+                podcastRepository.save(podcast);
+            } else {
+                ep.setStatus("DRAFT");
+                ep.setPublishedAt(null);
+            }
+        }
+        episodeRepository.save(ep);
+        return toDetail(podcastRepository.findById(podcastId).orElseThrow(), user);
+    }
+
+    @Transactional
+    public void deleteEpisode(User user, String podcastId, String episodeId) throws IOException {
+        Podcast podcast = podcastRepository.findById(podcastId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Podcast introuvable."));
+        if (!podcast.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
+        }
+        Episode ep = episodeRepository.findById(episodeId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Épisode introuvable."));
+        if (ep.getPodcast() == null || !ep.getPodcast().getId().equals(podcastId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Épisode invalide pour ce podcast.");
+        }
+        try {
+            storageService.delete(ep.getAudioUrl());
+        } catch (IOException ignored) {
+            // meille effort
+        }
+        episodeRepository.delete(ep);
     }
 
     @Transactional
@@ -152,9 +241,9 @@ public class PodcastService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
         }
 
-        for (Episode ep : episodeRepository.findByPodcastIdOrderByEpisodeNumberAsc(id)) {
+        for (Episode episode : episodeRepository.findByPodcastIdOrderByEpisodeNumberAsc(id)) {
             try {
-                storageService.delete(ep.getAudioUrl());
+                storageService.delete(episode.getAudioUrl());
             } catch (IOException ignored) {
                 // meille effort
             }
@@ -192,13 +281,17 @@ public class PodcastService {
                 u.getId(),
                 u.getUsername(),
                 p.getStatus(),
-                p.getCreatedAt()
+                p.getCreatedAt(),
+                p.getCategory(),
+                p.getLanguage()
         );
     }
 
-    private PodcastDetailDto toDetail(Podcast p) {
+    private PodcastDetailDto toDetail(Podcast p, User viewer) {
         PodcastSummaryDto s = toSummary(p);
+        boolean owner = viewer != null && viewer.getId().equals(p.getUser().getId());
         List<EpisodeDto> episodes = episodeRepository.findByPodcastIdOrderByEpisodeNumberAsc(p.getId()).stream()
+                .filter(e -> owner || "PUBLISHED".equalsIgnoreCase(e.getStatus()))
                 .map(this::toEpisodeDto)
                 .toList();
 
@@ -211,6 +304,8 @@ public class PodcastService {
                 s.authorName(),
                 s.status(),
                 s.createdAt(),
+                s.category(),
+                s.language(),
                 episodes
         );
     }
@@ -218,12 +313,14 @@ public class PodcastService {
     private EpisodeDto toEpisodeDto(Episode e) {
         int dur = e.getDuration() != null ? e.getDuration() : 0;
         Podcast pod = e.getPodcast();
+        String st = e.getStatus() != null ? e.getStatus() : "DRAFT";
         return new EpisodeDto(
                 e.getId(),
                 e.getTitle(),
                 e.getAudioUrl() != null ? e.getAudioUrl() : "",
                 dur,
                 pod != null ? pod.getId() : "",
+                st,
                 e.getCreatedAt()
         );
     }

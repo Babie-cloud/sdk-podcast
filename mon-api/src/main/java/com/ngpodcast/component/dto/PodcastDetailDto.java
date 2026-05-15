@@ -12,5 +12,7 @@ public record PodcastDetailDto(
         String authorName,
         String status,
         LocalDateTime createdAt,
+        String category,
+        String language,
         List<EpisodeDto> episodes
 ) {}

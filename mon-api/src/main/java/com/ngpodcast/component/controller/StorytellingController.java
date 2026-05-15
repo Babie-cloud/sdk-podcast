@@ -2,6 +2,7 @@ package com.ngpodcast.component.controller;
 
 import com.ngpodcast.component.dto.CreateStorytellingRequest;
 import com.ngpodcast.component.dto.StorytellingDto;
+import com.ngpodcast.component.dto.UpdateStorytellingRequest;
 import com.ngpodcast.component.service.StorytellingService;
 import com.ngpodcast.user.User;
 import jakarta.validation.Valid;
@@ -44,6 +45,15 @@ public class StorytellingController {
     ) {
         StorytellingDto dto = storytellingService.create(user, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    @PutMapping("/{id}")
+    public StorytellingDto update(
+            @AuthenticationPrincipal User user,
+            @PathVariable String id,
+            @Valid @RequestBody UpdateStorytellingRequest req
+    ) {
+        return storytellingService.update(user, id, req);
     }
 
     @DeleteMapping("/{id}")

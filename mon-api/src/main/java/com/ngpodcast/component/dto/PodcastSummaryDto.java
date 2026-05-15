@@ -10,5 +10,7 @@ public record PodcastSummaryDto(
         String authorId,
         String authorName,
         String status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String category,
+        String language
 ) {}

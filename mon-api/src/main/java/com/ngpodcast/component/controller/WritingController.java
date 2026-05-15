@@ -1,6 +1,7 @@
 package com.ngpodcast.component.controller;
 
 import com.ngpodcast.component.dto.CreateWritingRequest;
+import com.ngpodcast.component.dto.UpdateWritingRequest;
 import com.ngpodcast.component.dto.WritingDto;
 import com.ngpodcast.component.service.WritingService;
 import com.ngpodcast.user.User;
@@ -44,6 +45,15 @@ public class WritingController {
     ) {
         WritingDto dto = writingService.create(user, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    @PutMapping("/{id}")
+    public WritingDto update(
+            @AuthenticationPrincipal User user,
+            @PathVariable String id,
+            @Valid @RequestBody UpdateWritingRequest req
+    ) {
+        return writingService.update(user, id, req);
     }
 
     @DeleteMapping("/{id}")

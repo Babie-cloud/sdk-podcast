@@ -1,9 +1,12 @@
 package com.ngpodcast.component.controller;
 
+import com.ngpodcast.component.dto.EpisodePatchRequest;
 import com.ngpodcast.component.dto.PodcastDetailDto;
+import com.ngpodcast.component.dto.PodcastPatchRequest;
 import com.ngpodcast.component.dto.PodcastSummaryDto;
 import com.ngpodcast.component.service.PodcastService;
 import com.ngpodcast.user.User;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,6 +70,35 @@ public class PodcastController {
             @RequestPart("audio") MultipartFile audio
     ) throws IOException {
         return podcastService.addEpisode(user, podcastId, title, description, audio, publishNow);
+    }
+
+    @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public PodcastDetailDto patchPodcast(
+            @AuthenticationPrincipal User user,
+            @PathVariable String id,
+            @Valid @RequestBody PodcastPatchRequest body
+    ) {
+        return podcastService.patchPodcast(user, id, body);
+    }
+
+    @PatchMapping(value = "/{podcastId}/episodes/{episodeId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public PodcastDetailDto patchEpisode(
+            @AuthenticationPrincipal User user,
+            @PathVariable String podcastId,
+            @PathVariable String episodeId,
+            @Valid @RequestBody EpisodePatchRequest body
+    ) {
+        return podcastService.patchEpisode(user, podcastId, episodeId, body);
+    }
+
+    @DeleteMapping("/{podcastId}/episodes/{episodeId}")
+    public ResponseEntity<Void> deleteEpisode(
+            @AuthenticationPrincipal User user,
+            @PathVariable String podcastId,
+            @PathVariable String episodeId
+    ) throws IOException {
+        podcastService.deleteEpisode(user, podcastId, episodeId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

@@ -36,12 +36,19 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login", "/auth/register", "/auth/reset-password", "/auth/reset-password/confirm")
                     .permitAll()
                 .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                /* « /mine » doit rester avant les motifs /** sinon Spring autoriserait /mine sans JWT */
                 .requestMatchers(HttpMethod.GET, "/api/podcasts/mine").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/writings/mine").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/storytellings/mine").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/podcasts", "/api/podcasts/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/writings", "/api/writings/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings", "/api/storytellings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/podcasts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/podcasts/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/podcasts/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/writings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/writings/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/writings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -51,12 +58,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // localhost vs 127.0.0.1 vs ::1 ne renvoient pas la même Origin — motifs pour le dev.
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*",
-                "http://[::1]:*"
-        ));
+        /* Sans motif qui matche l’Origin du navigateur (https, autre IP, SSR…), Spring peut répondre 403.
+           allowCredentials=false → le motif * est autorisé ; à resserrer en prod si besoin. */
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(false);
