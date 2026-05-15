@@ -2,7 +2,7 @@ CREATE TYPE story_type AS ENUM ('CONFESSION', 'TESTIMONY', 'EXPERIENCE', 'ANONYM
 
 CREATE TABLE storytelling (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID            REFERENCES users(id) ON DELETE SET NULL,
+    user_id     VARCHAR(36)     REFERENCES users(id) ON DELETE SET NULL,
     title       VARCHAR(200)    NOT NULL,
     content     TEXT,
     type        story_type      NOT NULL DEFAULT 'TESTIMONY',

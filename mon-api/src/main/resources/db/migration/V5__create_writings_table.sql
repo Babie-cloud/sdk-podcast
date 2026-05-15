@@ -2,7 +2,7 @@ CREATE TYPE writing_type AS ENUM ('POEM', 'STORY', 'CONFESSION', 'TESTIMONY');
 
 CREATE TABLE writings (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id     VARCHAR(36)     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title       VARCHAR(200)    NOT NULL,
     content     TEXT            NOT NULL,
     type        writing_type    NOT NULL DEFAULT 'POEM',

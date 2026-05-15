@@ -16,12 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:" + uploadPath + "/");
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*", "http://[::1]:*")
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
+    /* CORS : uniquement dans SecurityConfig (corsConfigurationSource + chaîne de filtres).
+       Évite deux registres qui peuvent prêter à confusion ; NetworkError vient en général
+       d’une connexion impossible (Spring arrêté / Flyway / port), pas du doublon CORS. */
 }

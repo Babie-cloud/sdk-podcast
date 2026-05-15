@@ -10,6 +10,7 @@ public class PasswordResetToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(length = 36, nullable = false)
     private String id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
