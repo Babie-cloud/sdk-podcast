@@ -279,7 +279,7 @@ public class PodcastService {
                 p.getDescription(),
                 p.getCoverUrl(),
                 u.getId(),
-                u.getUsername(),
+                u.getPublicHandle(),
                 p.getStatus(),
                 p.getCreatedAt(),
                 p.getCategory(),

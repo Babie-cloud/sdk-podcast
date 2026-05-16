@@ -37,6 +37,12 @@ public class Writing {
     @Column(nullable = false)
     private Integer views = 0;
 
+    @Column(name = "anonymous_author", nullable = false)
+    private boolean anonymousAuthor = false;
+
+    @Column(name = "podcast_category", length = 80)
+    private String podcastCategory;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -54,6 +60,8 @@ public class Writing {
     public String getCoverUrl()         { return coverUrl; }
     public String getStatus()           { return status; }
     public Integer getViews()           { return views; }
+    public boolean isAnonymousAuthor()  { return anonymousAuthor; }
+    public String getPodcastCategory()  { return podcastCategory; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
@@ -65,6 +73,8 @@ public class Writing {
     public void setCoverUrl(String url)      { this.coverUrl = url; }
     public void setStatus(String status)     { this.status = status; }
     public void setViews(Integer views)      { this.views = views; }
+    public void setAnonymousAuthor(boolean anonymousAuthor) { this.anonymousAuthor = anonymousAuthor; }
+    public void setPodcastCategory(String podcastCategory)  { this.podcastCategory = podcastCategory; }
 
     @PreUpdate
     public void onUpdate() { this.updatedAt = LocalDateTime.now(); }

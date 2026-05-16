@@ -30,14 +30,14 @@ public class WritingService {
                         : writingRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
         return list.stream()
                 .filter(w -> "PUBLISHED".equalsIgnoreCase(w.getStatus()))
-                .map(this::toDto)
+                .map(w -> toDto(w, null))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<WritingDto> findMine(User user) {
         return writingRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
-                .map(this::toDto)
+                .map(w -> toDto(w, user))
                 .toList();
     }
 
@@ -48,7 +48,7 @@ public class WritingService {
         if (!canRead(w, viewer)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
         }
-        return toDto(w);
+        return toDto(w, viewer);
     }
 
     @Transactional
@@ -59,14 +59,22 @@ public class WritingService {
         w.setContent(req.content());
         w.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : "POEM");
         w.setStatus(normalizeWritingStatus(req.status()));
-        if (req.audioUrl() != null && !req.audioUrl().isBlank()) {
+        if (req.audioUrl() == null || req.audioUrl().isBlank()) {
+            w.setAudioUrl(null);
+        } else {
             w.setAudioUrl(req.audioUrl().trim());
         }
-        if (req.coverUrl() != null && !req.coverUrl().isBlank()) {
+        if (req.coverUrl() == null || req.coverUrl().isBlank()) {
+            w.setCoverUrl(null);
+        } else {
             w.setCoverUrl(req.coverUrl().trim());
         }
+        w.setAnonymousAuthor(Boolean.TRUE.equals(req.anonymousAuthor()));
+        if (req.podcastCategory() != null && !req.podcastCategory().isBlank()) {
+            w.setPodcastCategory(req.podcastCategory().trim());
+        }
         Writing saved = writingRepository.save(w);
-        return toDto(saved);
+        return toDto(saved, user);
     }
 
     @Transactional
@@ -80,13 +88,23 @@ public class WritingService {
         w.setContent(req.content());
         w.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : w.getType());
         w.setStatus(normalizeWritingStatus(req.status()));
-        if (req.audioUrl() != null && !req.audioUrl().isBlank()) {
+        if (req.audioUrl() == null || req.audioUrl().isBlank()) {
+            w.setAudioUrl(null);
+        } else {
             w.setAudioUrl(req.audioUrl().trim());
         }
-        if (req.coverUrl() != null && !req.coverUrl().isBlank()) {
+        if (req.coverUrl() == null || req.coverUrl().isBlank()) {
+            w.setCoverUrl(null);
+        } else {
             w.setCoverUrl(req.coverUrl().trim());
         }
-        return toDto(writingRepository.save(w));
+        if (req.anonymousAuthor() != null) {
+            w.setAnonymousAuthor(req.anonymousAuthor());
+        }
+        if (req.podcastCategory() != null) {
+            w.setPodcastCategory(req.podcastCategory().isBlank() ? null : req.podcastCategory().trim());
+        }
+        return toDto(writingRepository.save(w), user);
     }
 
     @Transactional
@@ -113,9 +131,19 @@ public class WritingService {
         return "PUBLISHED".equalsIgnoreCase(status) ? "PUBLISHED" : "DRAFT";
     }
 
-    private WritingDto toDto(Writing w) {
+    /** @param viewer null pour les listes publiques (liste « découvrir ») sans utilisateur JWT. */
+    private WritingDto toDto(Writing w, User viewer) {
         User u = w.getUser();
         Integer views = w.getViews() != null ? w.getViews() : 0;
+        boolean owner = viewer != null && viewer.getId().equals(u.getId());
+        boolean maskAuthor =
+                w.isAnonymousAuthor()
+                        && "PUBLISHED".equalsIgnoreCase(w.getStatus())
+                        && !owner;
+
+        String authorId = maskAuthor ? null : u.getId();
+        String authorName = maskAuthor ? "Anonyme" : u.getPublicHandle();
+
         return new WritingDto(
                 w.getId(),
                 w.getTitle(),
@@ -125,8 +153,10 @@ public class WritingService {
                 w.getCoverUrl(),
                 w.getStatus(),
                 views,
-                u.getId(),
-                u.getUsername(),
+                authorId,
+                authorName,
+                w.isAnonymousAuthor(),
+                w.getPodcastCategory(),
                 w.getCreatedAt()
         );
     }

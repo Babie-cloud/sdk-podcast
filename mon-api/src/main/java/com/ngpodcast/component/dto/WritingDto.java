@@ -13,5 +13,7 @@ public record WritingDto(
         Integer views,
         String authorId,
         String authorName,
+        Boolean anonymousAuthor,
+        String podcastCategory,
         LocalDateTime createdAt
 ) {}

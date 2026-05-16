@@ -131,7 +131,7 @@ public class StorytellingService {
         if (Boolean.TRUE.equals(anon)) {
             authorName = "Anonyme";
         } else if (u != null) {
-            authorName = u.getUsername();
+            authorName = u.getPublicHandle();
         } else {
             authorName = "Anonyme";
         }

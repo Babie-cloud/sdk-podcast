@@ -8,5 +8,7 @@ public record CreateWritingRequest(
         String type,
         String status,
         String audioUrl,
-        String coverUrl
+        String coverUrl,
+        Boolean anonymousAuthor,
+        String podcastCategory
 ) {}

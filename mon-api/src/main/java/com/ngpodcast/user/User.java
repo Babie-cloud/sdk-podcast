@@ -91,6 +91,11 @@ public class User implements UserDetails {
     public boolean isAnonymous()        { return anonymous; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
+    /** Pseudo / nom affiché (colonne « username »). {@link #getUsername} UserDetails renvoie l'email pour Spring Security. */
+    public String getPublicHandle() {
+        return username;
+    }
+
     // ── Setters ──────────────────────────────────────────────
     public void setId(String id)           { this.id = id; }
     public void setName(String name)       { this.name = name; }

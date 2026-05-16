@@ -133,8 +133,10 @@ public class AuthService {
                 new AuthResponse.UserDto(
                         user.getId(),
                         user.getEmail(),
-                        user.getUsername(),
-                        user.getRole().name()
+                        user.getPublicHandle(),
+                        user.getRole().name(),
+                        user.getName(),
+                        user.getPrenom()
                 )
         );
     }

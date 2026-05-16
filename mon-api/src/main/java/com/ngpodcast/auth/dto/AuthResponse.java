@@ -8,6 +8,8 @@ public record AuthResponse(
         String id,
         String email,
         String username,
-        String role
+        String role,
+        String name,
+        String prenom
     ) {}
 }
