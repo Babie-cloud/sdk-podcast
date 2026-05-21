@@ -3,7 +3,6 @@ package com.ngpodcast.config;
 import com.ngpodcast.security.JwtFilter;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,7 +15,6 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -40,13 +38,15 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/podcasts/mine").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/writings/mine").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/storytellings/mine").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/podcasts").permitAll()
+                /* Slash final distinct : motifs type /api/writings/** ne couvrent pas /api/writings/ sous PathPatterns,
+                   sinon ces GET tombent dans anyRequest → 403 alors que sans slash ils sont bien publics. */
+                .requestMatchers(HttpMethod.GET, "/api/podcasts", "/api/podcasts/").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/podcasts/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/podcasts/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/writings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/writings", "/api/writings/").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/writings/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/writings/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/storytellings", "/api/storytellings/").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/storytellings/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/storytellings/**").permitAll()
                 .anyRequest().authenticated()

@@ -74,20 +74,31 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String email = jwtService.extractEmail(token);
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var loaded = userRepository.findByEmail(email);
-            if (loaded.isEmpty()) {
-                unauthorized(
-                        response,
-                        "Jeton JWT : utilisateur inconnu ou supprime. Connectez-vous de nouveau.");
+        /*
+         * Ne pas exiger authentication == null : un filtre en amont ou un contexte résiduel
+         * peut laisser un principal incohérent ; pour un Bearer valide on réassocie toujours
+         * l’User issu du JWT (évite des 403 opaques sur POST JSON valides alors que GET /mine marche).
+         */
+        if (email == null || email.isBlank()) {
+            if (isMutating(request.getMethod())) {
+                unauthorized(response, "Jeton JWT invalide : sujet vide.");
                 return;
             }
-            User user = loaded.get();
-            var auth =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            chain.doFilter(request, response);
+            return;
         }
+
+        var loaded = userRepository.findByEmail(email);
+        if (loaded.isEmpty()) {
+            unauthorized(
+                    response,
+                    "Jeton JWT : utilisateur inconnu ou supprime. Connectez-vous de nouveau.");
+            return;
+        }
+        User user = loaded.get();
+        var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
 
         chain.doFilter(request, response);
     }
