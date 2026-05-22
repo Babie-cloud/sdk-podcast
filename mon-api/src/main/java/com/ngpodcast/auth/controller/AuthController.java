@@ -3,6 +3,7 @@ package com.ngpodcast.auth.controller;
 import com.ngpodcast.auth.dto.*;
 import com.ngpodcast.auth.service.AuthService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<PasswordResetInitResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
-        return ResponseEntity.ok(authService.requestPasswordReset(req));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(authService.requestPasswordReset(req));
     }
 
     @PostMapping("/reset-password/confirm")

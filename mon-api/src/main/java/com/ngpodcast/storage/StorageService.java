@@ -1,6 +1,8 @@
 package com.ngpodcast.storage;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,6 +11,8 @@ import java.nio.file.*;
 
 @Service
 public class StorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(StorageService.class);
 
     @Value("${storage.local.path:uploads}")
     private String uploadPath;
@@ -30,6 +34,10 @@ public class StorageService {
         }
         String prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         if (!fileUrl.startsWith(prefix)) {
+            log.warn(
+                    "Suppression ignoree : URL fichier ne correspond pas a storage.base-url (prefix={}) url={}",
+                    prefix,
+                    fileUrl);
             return;
         }
         String relativePath = fileUrl.substring(prefix.length());

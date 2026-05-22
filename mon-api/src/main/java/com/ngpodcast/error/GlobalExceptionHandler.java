@@ -1,7 +1,9 @@
 package com.ngpodcast.error;
 
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,6 +31,32 @@ public class GlobalExceptionHandler {
     public ProblemDetail badCredentials(BadCredentialsException ex, WebRequest request) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
         pd.setTitle("Non autorise");
+        pd.setInstance(URI.create(path(request)));
+        return pd;
+    }
+
+    /** Authentifications Spring Security non couvertes par BadCredentialsException (session, pré-auth, etc.). */
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail authentication(AuthenticationException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage() != null && !ex.getMessage().isBlank()
+                        ? ex.getMessage()
+                        : "Authentification requise.");
+        pd.setTitle("Non autorise");
+        pd.setInstance(URI.create(path(request)));
+        return pd;
+    }
+
+    /** Réponses JSON homogènes pour les refus Spring Security (403). */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail accessDenied(AccessDeniedException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage() != null && !ex.getMessage().isBlank()
+                        ? ex.getMessage()
+                        : "Acces refuse.");
+        pd.setTitle("Interdit");
         pd.setInstance(URI.create(path(request)));
         return pd;
     }

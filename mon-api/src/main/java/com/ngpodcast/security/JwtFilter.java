@@ -14,10 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@Component
+/** Enregistré uniquement via {@link com.ngpodcast.config.SecurityConfig} (+ désactivation servlet auto). */
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -31,9 +30,9 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Jeton Bearer valide mais compte inexistant → 401 (sinon POST authentifié finit en 403 peu explicite).
-     * Jeton expiré/invalide : lecture (GET) reste anonyme possible ; écriture (POST/PUT/PATCH/DELETE) → 401
-     * pour qu’on reconnecte au lieu d’un 403 silencieux.
+     * Réponses JSON 401 pour que la SPA puisse déconnecter / rafraîchir la session.
+     * Si un header {@code Bearer} est envoyé mais le jeton est vide, invalide ou expiré,
+     * on répond toujours 401 (plus de GET anonymes avec un vieux jeton qui finissaient en 403 sur /mine).
      */
     private void unauthorized(HttpServletResponse response, String detail) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -57,18 +56,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String token = authHeader.substring(7).trim();
         if (token.isEmpty() || !jwtService.isValid(token)) {
-            /*
-             * Jeton absent du corps / expiré : si le client envoie quand même un Bearer (ex. vieux np_jwt),
-             * les GET publics doivent rester accessibles ; en revanche POST/PUT/DELETE authentifiés
-             * aboutissaient à un 403 opaque — on renvoie 401 explicite pour déclencher reconnexion côté SPA.
-             */
-            if (isMutating(request.getMethod())) {
-                unauthorized(
-                        response,
-                        "Jeton JWT invalide ou expire. Deconnectez-vous et reconnectez-vous.");
-                return;
-            }
-            chain.doFilter(request, response);
+            unauthorized(
+                    response,
+                    "Jeton JWT invalide ou expire. Deconnectez-vous et reconnectez-vous.");
             return;
         }
 
@@ -80,11 +70,7 @@ public class JwtFilter extends OncePerRequestFilter {
          * l’User issu du JWT (évite des 403 opaques sur POST JSON valides alors que GET /mine marche).
          */
         if (email == null || email.isBlank()) {
-            if (isMutating(request.getMethod())) {
-                unauthorized(response, "Jeton JWT invalide : sujet vide.");
-                return;
-            }
-            chain.doFilter(request, response);
+            unauthorized(response, "Jeton JWT invalide : sujet vide.");
             return;
         }
 
@@ -101,15 +87,5 @@ public class JwtFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         chain.doFilter(request, response);
-    }
-
-    private static boolean isMutating(String method) {
-        if (method == null) {
-            return false;
-        }
-        return switch (method.toUpperCase()) {
-            case "POST", "PUT", "PATCH", "DELETE" -> true;
-            default -> false;
-        };
     }
 }
