@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,9 +31,15 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Réponses JSON 401 pour que la SPA puisse déconnecter / rafraîchir la session.
-     * Si un header {@code Bearer} est envoyé mais le jeton est vide, invalide ou expiré,
-     * on répond toujours 401 (plus de GET anonymes avec un vieux jeton qui finissaient en 403 sur /mine).
+     * Réponses JSON 401 lorsque le JWT est « valide » mais incohérent (sujet vide, utilisateur supprimé).
+     * <p>
+     * Jeton vide / expiré / signature invalide avec header {@code Bearer} :
+     * <ul>
+     *   <li>{@code GET} / {@code HEAD} : contexte effacé, requête <strong>anonyme</strong> —
+     *       les lectures {@code permitAll} (listes publiques) fonctionnent malgré un vieux jeton dans le navigateur ;
+     *       les routes réservées (ex. {@code /mine}) renvoient 403.</li>
+     *   <li>mutation ({@code POST}, {@code PUT}, …) : 401 pour forcer une reconnexion côté SPA.</li>
+     * </ul>
      */
     private void unauthorized(HttpServletResponse response, String detail) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -56,9 +63,19 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String token = authHeader.substring(7).trim();
         if (token.isEmpty() || !jwtService.isValid(token)) {
-            unauthorized(
-                    response,
-                    "Jeton JWT invalide ou expire. Deconnectez-vous et reconnectez-vous.");
+            SecurityContextHolder.clearContext();
+            String method = request.getMethod();
+            boolean safeRead =
+                    HttpMethod.GET.matches(method)
+                            || HttpMethod.HEAD.matches(method)
+                            || HttpMethod.OPTIONS.matches(method);
+            if (!safeRead) {
+                unauthorized(
+                        response,
+                        "Jeton JWT invalide ou expire. Deconnectez-vous et reconnectez-vous.");
+                return;
+            }
+            chain.doFilter(request, response);
             return;
         }
 

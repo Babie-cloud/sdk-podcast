@@ -21,6 +21,10 @@ public class Episode {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** JSON de segments type [{\"s\":0,\"e\":5,\"t\":\"…\"}] (secondes début/fin). */
+    @Column(columnDefinition = "TEXT")
+    private String captions;
+
     @Column(name = "audio_url")
     private String audioUrl;
 
@@ -48,6 +52,7 @@ public class Episode {
     public Podcast getPodcast()          { return podcast; }
     public String getTitle()             { return title; }
     public String getDescription()       { return description; }
+    public String getCaptions()         { return captions; }
     public String getAudioUrl()          { return audioUrl; }
     public Integer getDuration()         { return duration; }
     public Long getFileSize()            { return fileSize; }
@@ -59,6 +64,7 @@ public class Episode {
     public void setPodcast(Podcast p)          { this.podcast = p; }
     public void setTitle(String title)         { this.title = title; }
     public void setDescription(String d)       { this.description = d; }
+    public void setCaptions(String c)         { this.captions = c; }
     public void setAudioUrl(String url)        { this.audioUrl = url; }
     public void setDuration(Integer d)         { this.duration = d; }
     public void setFileSize(Long s)            { this.fileSize = s; }

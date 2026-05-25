@@ -9,5 +9,6 @@ public record EpisodeDto(
         int duration,
         String podcastId,
         String status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String captions
 ) {}

@@ -198,6 +198,10 @@ public class PodcastService {
         if (patch.description() != null) {
             ep.setDescription(patch.description());
         }
+        if (patch.captions() != null) {
+            String c = patch.captions().trim();
+            ep.setCaptions(c.isBlank() ? null : c);
+        }
         if (patch.publishNow() != null) {
             if (patch.publishNow()) {
                 ep.setStatus("PUBLISHED");
@@ -321,7 +325,8 @@ public class PodcastService {
                 dur,
                 pod != null ? pod.getId() : "",
                 st,
-                e.getCreatedAt()
+                e.getCreatedAt(),
+                e.getCaptions()
         );
     }
 }
