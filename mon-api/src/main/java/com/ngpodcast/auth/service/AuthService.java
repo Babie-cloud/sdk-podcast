@@ -19,6 +19,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -27,6 +28,8 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final JwtService                   jwtService;
     private final PasswordEncoder              passwordEncoder;
+    private final EmailVerificationService     emailVerificationService;
+    private final GoogleIdentityService        googleIdentityService;
     private final SecureRandom                 secureRandom = new SecureRandom();
 
     private final boolean exposePasswordResetToken;
@@ -35,14 +38,19 @@ public class AuthService {
                        PasswordResetTokenRepository passwordResetTokenRepository,
                        JwtService jwtService,
                        PasswordEncoder passwordEncoder,
+                       EmailVerificationService emailVerificationService,
+                       GoogleIdentityService googleIdentityService,
                        @Value("${app.password-reset.expose-token:false}") boolean exposePasswordResetToken) {
         this.userRepository               = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.jwtService                   = jwtService;
         this.passwordEncoder             = passwordEncoder;
+        this.emailVerificationService    = emailVerificationService;
+        this.googleIdentityService       = googleIdentityService;
         this.exposePasswordResetToken    = exposePasswordResetToken;
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email deja utilise.");
@@ -57,9 +65,12 @@ public class AuthService {
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .role(Role.USER)
+                .emailVerified(false)
+                .authProvider("LOCAL")
                 .build();
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+        emailVerificationService.sendVerification(user);
         return toResponse(jwtService.generateToken(user.getEmail()), user);
     }
 
@@ -72,6 +83,28 @@ public class AuthService {
         }
 
         return toResponse(jwtService.generateToken(user.getEmail()), user);
+    }
+
+    @Transactional
+    public AuthResponse googleLogin(GoogleLoginRequest req) {
+        GoogleIdentityService.GoogleProfile profile = googleIdentityService.verify(req.idToken());
+        User user = userRepository.findByGoogleSubject(profile.subject())
+                .or(() -> userRepository.findByEmail(profile.email()))
+                .map(existing -> updateGoogleUser(existing, profile))
+                .orElseGet(() -> createGoogleUser(profile));
+
+        return toResponse(jwtService.generateToken(user.getEmail()), user);
+    }
+
+    @Transactional
+    public void resendVerification(ResendVerificationRequest req) {
+        userRepository.findByEmail(req.email())
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(emailVerificationService::sendVerification);
+    }
+
+    public String verifyEmail(String token) {
+        return emailVerificationService.verify(token);
     }
 
     /**
@@ -136,8 +169,47 @@ public class AuthService {
                         user.getPublicHandle(),
                         user.getRole().name(),
                         user.getName(),
-                        user.getPrenom()
+                        user.getPrenom(),
+                        user.isEmailVerified()
                 )
         );
+    }
+
+    private User updateGoogleUser(
+            User user,
+            GoogleIdentityService.GoogleProfile profile
+    ) {
+        user.setGoogleSubject(profile.subject());
+        user.setAuthProvider("GOOGLE");
+        user.setEmailVerified(true);
+        if (user.getPublicHandle() == null || user.getPublicHandle().isBlank()) {
+            user.setUsername(displayName(profile));
+        }
+        return userRepository.save(user);
+    }
+
+    private User createGoogleUser(GoogleIdentityService.GoogleProfile profile) {
+        String givenName = profile.givenName().isBlank() ? profile.displayName() : profile.givenName();
+        if (givenName == null || givenName.isBlank()) givenName = "Google";
+        String familyName = profile.familyName().isBlank() ? "User" : profile.familyName();
+        User user = User.builder()
+                .name(familyName)
+                .prenom(givenName)
+                .username(displayName(profile))
+                .email(profile.email())
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(Role.USER)
+                .emailVerified(true)
+                .authProvider("GOOGLE")
+                .googleSubject(profile.subject())
+                .build();
+        return userRepository.save(user);
+    }
+
+    private static String displayName(GoogleIdentityService.GoogleProfile profile) {
+        if (profile.displayName() != null && !profile.displayName().isBlank()) {
+            return profile.displayName();
+        }
+        return (profile.givenName() + " " + profile.familyName()).trim();
     }
 }

@@ -30,7 +30,8 @@ public class UserService {
                 entity.getPublicHandle(),
                 entity.getRole().name(),
                 entity.getName(),
-                entity.getPrenom()
+                entity.getPrenom(),
+                entity.isEmailVerified()
         );
     }
 }

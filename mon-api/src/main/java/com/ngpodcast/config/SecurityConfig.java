@@ -4,16 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ngpodcast.security.JwtFilter;
 import com.ngpodcast.security.JwtService;
 import com.ngpodcast.user.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.*;
 import java.util.List;
 
@@ -48,34 +51,68 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 /*
-                 * Ordre des matchers : endpoints publics (auth, fichiers, GET listes publiques),
+                 * Sans session/form-login, Spring peut répondre 403 sur une route
+                 * authenticated() appelée anonymement. Pour une SPA, c'est bien un 401 :
+                 * "connecte-toi d'abord".
+                 */
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED,
+                                        "Authentification requise."))
+                )
+                /*
+                 * Ordre des matchers : endpoints publics (auth, fichiers, GET/HEAD listes publiques),
                  * puis GET /mine authentifiés, puis tout le reste de /api/** → JWT obligatoire.
                  */
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/auth/login", "/auth/register", "/auth/reset-password", "/auth/reset-password/confirm")
-                    .permitAll()
-                .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
-                /* « /mine » doit rester avant les motifs /** sinon Spring autoriserait /mine sans JWT */
-                .requestMatchers(HttpMethod.GET, "/api/podcasts/mine").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/writings/mine").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings/mine").authenticated()
-                /* Slash final distinct : motifs type /api/writings/** ne couvrent pas /api/writings/ sous PathPatterns,
-                   sinon ces GET tombent dans anyRequest → 403 alors que sans slash ils sont bien publics. */
-                .requestMatchers(HttpMethod.GET, "/api/podcasts", "/api/podcasts/").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/podcasts/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/podcasts/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/writings", "/api/writings/").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/writings/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/writings/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings", "/api/storytellings/").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/storytellings/**").permitAll()
-                .anyRequest().authenticated()
-            )
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                    auth.requestMatchers(
+                                    "/auth/config",
+                                    "/auth/login",
+                                    "/auth/register",
+                                    "/auth/google",
+                                    "/auth/resend-verification",
+                                    "/auth/verify-email",
+                                    "/auth/reset-password",
+                                    "/auth/reset-password/confirm")
+                            .permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/files/**").permitAll();
+                    auth.requestMatchers(HttpMethod.HEAD, "/files/**").permitAll();
+                    /* « /mine » avant /** : sinon lecture anonyme autorisée sur /mine */
+                    auth.requestMatchers(HttpMethod.GET, "/api/podcasts/mine").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/writings/mine").authenticated();
+                    auth.requestMatchers(HttpMethod.GET, "/api/storytellings/mine").authenticated();
+                    permitPublicCatalogRead(auth, "podcasts");
+                    permitPublicCatalogRead(auth, "writings");
+                    permitPublicCatalogRead(auth, "storytellings");
+                    auth.anyRequest().authenticated();
+                })
                 /* JWT avant UsernamePasswordAuthenticationFilter : peupler SecurityContext avant AuthorizationFilter. */
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    /**
+     * GET/HEAD catalogue public (listes + détail par id) : accès anonyme.
+     * PathPatterns + Ant : évite les 403 sur slash final ou chemins non couverts par /** seul.
+     */
+    private static void permitPublicCatalogRead(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth,
+            String segment) {
+        String base = "/api/" + segment;
+        auth.requestMatchers(HttpMethod.GET, base, base + "/").permitAll();
+        auth.requestMatchers(HttpMethod.GET, base + "/*").permitAll();
+        auth.requestMatchers(HttpMethod.GET, base + "/**").permitAll();
+        auth.requestMatchers(HttpMethod.HEAD, base, base + "/").permitAll();
+        auth.requestMatchers(HttpMethod.HEAD, base + "/*").permitAll();
+        auth.requestMatchers(HttpMethod.HEAD, base + "/**").permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base, HttpMethod.GET.name())).permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base + "/", HttpMethod.GET.name())).permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base + "/**", HttpMethod.GET.name())).permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base, HttpMethod.HEAD.name())).permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base + "/", HttpMethod.HEAD.name())).permitAll();
+        auth.requestMatchers(new AntPathRequestMatcher(base + "/**", HttpMethod.HEAD.name())).permitAll();
     }
 
     @Bean
@@ -92,7 +129,7 @@ public class SecurityConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.addAllowedHeader("Authorization");
         config.setAllowCredentials(false);

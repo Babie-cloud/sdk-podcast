@@ -38,6 +38,15 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean anonymous = false;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = true;
+
+    @Column(name = "auth_provider", nullable = false)
+    private String authProvider = "LOCAL";
+
+    @Column(name = "google_subject", unique = true)
+    private String googleSubject;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -56,6 +65,9 @@ public class User implements UserDetails {
         private String password;
         private Role role = Role.USER;
         private boolean anonymous = false;
+        private boolean emailVerified = true;
+        private String authProvider = "LOCAL";
+        private String googleSubject;
         private LocalDateTime createdAt = LocalDateTime.now();
 
         public Builder id(String id)             { this.id = id; return this; }
@@ -66,6 +78,9 @@ public class User implements UserDetails {
         public Builder password(String password) { this.password = password; return this; }
         public Builder role(Role role)           { this.role = role; return this; }
         public Builder anonymous(boolean a)      { this.anonymous = a; return this; }
+        public Builder emailVerified(boolean v)  { this.emailVerified = v; return this; }
+        public Builder authProvider(String p)    { this.authProvider = p; return this; }
+        public Builder googleSubject(String s)   { this.googleSubject = s; return this; }
 
         public User build() {
             User u        = new User();
@@ -77,6 +92,9 @@ public class User implements UserDetails {
             u.password    = this.password;
             u.role        = this.role;
             u.anonymous   = this.anonymous;
+            u.emailVerified = this.emailVerified;
+            u.authProvider = this.authProvider;
+            u.googleSubject = this.googleSubject;
             u.createdAt   = this.createdAt;
             return u;
         }
@@ -89,6 +107,9 @@ public class User implements UserDetails {
     public String getEmail()            { return email; }  // ← AJOUTÉ
     public Role   getRole()             { return role; }
     public boolean isAnonymous()        { return anonymous; }
+    public boolean isEmailVerified()    { return emailVerified; }
+    public String getAuthProvider()     { return authProvider; }
+    public String getGoogleSubject()    { return googleSubject; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     /** Pseudo / nom affiché (colonne « username »). {@link #getUsername} UserDetails renvoie l'email pour Spring Security. */
@@ -105,6 +126,9 @@ public class User implements UserDetails {
     public void setPassword(String pwd)    { this.password = pwd; }
     public void setRole(Role role)         { this.role = role; }
     public void setAnonymous(boolean a)    { this.anonymous = a; }
+    public void setEmailVerified(boolean v){ this.emailVerified = v; }
+    public void setAuthProvider(String p)  { this.authProvider = p; }
+    public void setGoogleSubject(String s) { this.googleSubject = s; }
 
     // ── UserDetails ──────────────────────────────────────────
     @Override

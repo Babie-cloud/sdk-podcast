@@ -10,6 +10,7 @@ public record AuthResponse(
         String username,
         String role,
         String name,
-        String prenom
+        String prenom,
+        boolean emailVerified
     ) {}
 }

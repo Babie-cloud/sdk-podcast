@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Thu May 28 00:33:33 CEST 2026
+@default-central-https\://repo.maven.apache.org/maven2/.lastUpdated=1779921213465
+https\://repo.maven.apache.org/maven2/.error=Could not transfer artifact org.springframework.boot\:spring-boot-starter-mail\:pom\:3.2.5 from/to central (https\://repo.maven.apache.org/maven2)\: repo.maven.apache.org\: Nom ou service inconnu

@@ -37,7 +37,8 @@ public class UserController {
                 user.getPublicHandle(),
                 user.getRole().name(),
                 user.getName(),
-                user.getPrenom()
+                user.getPrenom(),
+                user.isEmailVerified()
         );
     }
 }

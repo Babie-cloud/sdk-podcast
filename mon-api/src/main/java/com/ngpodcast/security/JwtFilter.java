@@ -49,6 +49,33 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path != null && path.startsWith("/auth/")) {
+            return true;
+        }
+        return isPublicCatalogRead(request);
+    }
+
+    /** GET/HEAD catalogue public (listes + détail id) : ne pas appliquer JWT (évite 401/403 avec vieux jeton). */
+    private static boolean isPublicCatalogRead(HttpServletRequest request) {
+        String method = request.getMethod();
+        if (!HttpMethod.GET.matches(method) && !HttpMethod.HEAD.matches(method)) {
+            return false;
+        }
+        String path = request.getRequestURI();
+        if (path == null || path.contains("/mine")) {
+            return false;
+        }
+        for (String base : new String[] {"/api/podcasts", "/api/writings", "/api/storytellings"}) {
+            if (path.equals(base) || path.equals(base + "/") || path.startsWith(base + "/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
