@@ -29,6 +29,7 @@ public class AuthService {
     private final JwtService                   jwtService;
     private final PasswordEncoder              passwordEncoder;
     private final EmailVerificationService     emailVerificationService;
+    private final PasswordResetEmailService    passwordResetEmailService;
     private final GoogleIdentityService        googleIdentityService;
     private final SecureRandom                 secureRandom = new SecureRandom();
 
@@ -39,6 +40,7 @@ public class AuthService {
                        JwtService jwtService,
                        PasswordEncoder passwordEncoder,
                        EmailVerificationService emailVerificationService,
+                       PasswordResetEmailService passwordResetEmailService,
                        GoogleIdentityService googleIdentityService,
                        @Value("${app.password-reset.expose-token:false}") boolean exposePasswordResetToken) {
         this.userRepository               = userRepository;
@@ -46,6 +48,7 @@ public class AuthService {
         this.jwtService                   = jwtService;
         this.passwordEncoder             = passwordEncoder;
         this.emailVerificationService    = emailVerificationService;
+        this.passwordResetEmailService   = passwordResetEmailService;
         this.googleIdentityService       = googleIdentityService;
         this.exposePasswordResetToken    = exposePasswordResetToken;
     }
@@ -122,6 +125,7 @@ public class AuthService {
                     String tokenHash = sha256Hex(raw);
                     Instant expiresAt = Instant.now().plus(Duration.ofHours(1));
                     passwordResetTokenRepository.save(new PasswordResetToken(user, tokenHash, expiresAt));
+                    passwordResetEmailService.sendResetLink(user, plainToken);
                     String exposed = exposePasswordResetToken ? plainToken : null;
                     return new PasswordResetInitResponse(exposed);
                 })

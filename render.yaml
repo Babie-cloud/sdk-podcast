@@ -1,0 +1,36 @@
+# Blueprint Render pour le backend Spring Boot (depot sdk-podcast).
+# Render -> New -> Blueprint -> selectionne ce depot. Les variables marquees
+# sync:false sont a remplir dans le dashboard Render (jamais commitees).
+services:
+  - type: web
+    name: ngpodcast-api
+    runtime: docker
+    rootDir: mon-api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /auth/config
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: APP_FRONTEND_URL
+        sync: false
+      - key: APP_API_PUBLIC_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false

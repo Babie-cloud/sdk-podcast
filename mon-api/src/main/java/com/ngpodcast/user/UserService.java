@@ -34,4 +34,11 @@ public class UserService {
                 entity.isEmailVerified()
         );
     }
+
+    @Transactional
+    public void deleteProfile(User principal) {
+        User entity = userRepository.findByEmail(principal.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable."));
+        userRepository.delete(entity);
+    }
 }

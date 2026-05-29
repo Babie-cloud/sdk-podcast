@@ -38,6 +38,11 @@ public class WritingController {
         return writingService.getById(id, user);
     }
 
+    @PostMapping("/{id}/view")
+    public WritingDto registerView(@PathVariable String id, @AuthenticationPrincipal User user) {
+        return writingService.registerView(id, user);
+    }
+
     @PostMapping
     public ResponseEntity<WritingDto> create(
             @AuthenticationPrincipal User user,

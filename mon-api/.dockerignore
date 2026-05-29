@@ -1,0 +1,12 @@
+target/
+.m2repo/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+HELP.md
+.env
+.env.*
+!.env.example
+uploads/

@@ -1,0 +1,20 @@
+ALTER TABLE writings
+    ALTER COLUMN type DROP DEFAULT;
+
+ALTER TABLE writings
+    ALTER COLUMN type TYPE VARCHAR(30) USING type::text;
+
+ALTER TABLE writings
+    ALTER COLUMN type SET DEFAULT 'POEM';
+
+ALTER TABLE storytelling
+    ALTER COLUMN type DROP DEFAULT;
+
+ALTER TABLE storytelling
+    ALTER COLUMN type TYPE VARCHAR(30) USING type::text;
+
+ALTER TABLE storytelling
+    ALTER COLUMN type SET DEFAULT 'TESTIMONY';
+
+DROP TYPE IF EXISTS writing_type;
+DROP TYPE IF EXISTS story_type;

@@ -38,6 +38,11 @@ public class StorytellingController {
         return storytellingService.getById(id, user);
     }
 
+    @PostMapping("/{id}/view")
+    public StorytellingDto registerView(@PathVariable String id, @AuthenticationPrincipal User user) {
+        return storytellingService.registerView(id, user);
+    }
+
     @PostMapping
     public ResponseEntity<StorytellingDto> create(
             @AuthenticationPrincipal User user,

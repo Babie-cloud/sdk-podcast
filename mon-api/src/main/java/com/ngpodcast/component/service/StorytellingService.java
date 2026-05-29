@@ -7,6 +7,7 @@ import com.ngpodcast.component.entity.Storytelling;
 import com.ngpodcast.component.repository.StorytellingRepository;
 import com.ngpodcast.user.User;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,9 +18,11 @@ import java.util.List;
 public class StorytellingService {
 
     private final StorytellingRepository storytellingRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public StorytellingService(StorytellingRepository storytellingRepository) {
+    public StorytellingService(StorytellingRepository storytellingRepository, JdbcTemplate jdbcTemplate) {
         this.storytellingRepository = storytellingRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -47,13 +50,37 @@ public class StorytellingService {
     }
 
     @Transactional
+    public StorytellingDto registerView(String id, User viewer) {
+        Storytelling st = storytellingRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Introuvable."));
+        if (!"PUBLISHED".equalsIgnoreCase(st.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seules les histoires publiques comptent les vues.");
+        }
+        int inserted = jdbcTemplate.update(
+                """
+                INSERT INTO storytelling_account_views (storytelling_id, user_id)
+                VALUES (?, ?)
+                ON CONFLICT DO NOTHING
+                """,
+                id,
+                viewer.getId()
+        );
+        if (inserted > 0) {
+            Integer current = st.getViews() != null ? st.getViews() : 0;
+            st.setViews(current + 1);
+            st = storytellingRepository.save(st);
+        }
+        return toDto(st);
+    }
+
+    @Transactional
     public StorytellingDto create(User user, CreateStorytellingRequest req) {
         Storytelling st = new Storytelling();
         st.setUser(user);
         st.setTitle(req.title().trim());
         st.setContent(req.content() != null ? req.content() : "");
         st.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : "TESTIMONY");
-        st.setStatus(normalizeStorytellingStatus(req.status()));
+        st.setStatus(normalizeStorytellingStatus(req.status(), "PUBLISHED"));
         boolean anon = Boolean.TRUE.equals(req.anonymous());
         st.setAnonymous(anon);
         if (req.audioUrl() != null && !req.audioUrl().isBlank()) {
@@ -77,7 +104,9 @@ public class StorytellingService {
         st.setTitle(req.title().trim());
         st.setContent(req.content() != null ? req.content() : "");
         st.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : st.getType());
-        st.setStatus(normalizeStorytellingStatus(req.status()));
+        if (req.status() != null && !req.status().isBlank()) {
+            st.setStatus(normalizeStorytellingStatus(req.status(), st.getStatus()));
+        }
         if (req.anonymous() != null) {
             st.setAnonymous(req.anonymous());
         }
@@ -113,9 +142,9 @@ public class StorytellingService {
         return owner != null && viewer != null && owner.getId().equals(viewer.getId());
     }
 
-    private static String normalizeStorytellingStatus(String status) {
+    private static String normalizeStorytellingStatus(String status, String defaultStatus) {
         if (status == null || status.isBlank()) {
-            return "DRAFT";
+            return defaultStatus;
         }
         return "PUBLISHED".equalsIgnoreCase(status) ? "PUBLISHED" : "DRAFT";
     }

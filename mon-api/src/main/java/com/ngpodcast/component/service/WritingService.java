@@ -7,6 +7,7 @@ import com.ngpodcast.component.entity.Writing;
 import com.ngpodcast.component.repository.WritingRepository;
 import com.ngpodcast.user.User;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,16 +18,18 @@ import java.util.List;
 public class WritingService {
 
     private final WritingRepository writingRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public WritingService(WritingRepository writingRepository) {
+    public WritingService(WritingRepository writingRepository, JdbcTemplate jdbcTemplate) {
         this.writingRepository = writingRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional(readOnly = true)
     public List<WritingDto> findPublished(String query) {
         List<Writing> list =
                 query != null && !query.isBlank()
-                        ? writingRepository.searchByTitle(query.trim())
+                        ? writingRepository.searchPublishedByTitle(query.trim())
                         : writingRepository.findByStatusOrderByCreatedAtDesc("PUBLISHED");
         return list.stream()
                 .filter(w -> "PUBLISHED".equalsIgnoreCase(w.getStatus()))
@@ -52,13 +55,37 @@ public class WritingService {
     }
 
     @Transactional
+    public WritingDto registerView(String id, User viewer) {
+        Writing w = writingRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Introuvable."));
+        if (!"PUBLISHED".equalsIgnoreCase(w.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seuls les textes publics comptent les vues.");
+        }
+        int inserted = jdbcTemplate.update(
+                """
+                INSERT INTO writing_account_views (writing_id, user_id)
+                VALUES (?, ?)
+                ON CONFLICT DO NOTHING
+                """,
+                id,
+                viewer.getId()
+        );
+        if (inserted > 0) {
+            Integer current = w.getViews() != null ? w.getViews() : 0;
+            w.setViews(current + 1);
+            w = writingRepository.save(w);
+        }
+        return toDto(w, viewer);
+    }
+
+    @Transactional
     public WritingDto create(User user, CreateWritingRequest req) {
         Writing w = new Writing();
         w.setUser(user);
         w.setTitle(req.title().trim());
         w.setContent(req.content());
         w.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : "POEM");
-        w.setStatus(normalizeWritingStatus(req.status()));
+        w.setStatus(normalizeWritingStatus(req.status(), "PUBLISHED"));
         if (req.audioUrl() == null || req.audioUrl().isBlank()) {
             w.setAudioUrl(null);
         } else {
@@ -87,7 +114,9 @@ public class WritingService {
         w.setTitle(req.title().trim());
         w.setContent(req.content());
         w.setType(req.type() != null && !req.type().isBlank() ? req.type().trim().toUpperCase() : w.getType());
-        w.setStatus(normalizeWritingStatus(req.status()));
+        if (req.status() != null && !req.status().isBlank()) {
+            w.setStatus(normalizeWritingStatus(req.status(), w.getStatus()));
+        }
         if (req.audioUrl() == null || req.audioUrl().isBlank()) {
             w.setAudioUrl(null);
         } else {
@@ -124,9 +153,9 @@ public class WritingService {
         return viewer != null && viewer.getId().equals(writing.getUser().getId());
     }
 
-    private static String normalizeWritingStatus(String status) {
+    private static String normalizeWritingStatus(String status, String defaultStatus) {
         if (status == null || status.isBlank()) {
-            return "DRAFT";
+            return defaultStatus;
         }
         return "PUBLISHED".equalsIgnoreCase(status) ? "PUBLISHED" : "DRAFT";
     }

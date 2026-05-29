@@ -30,6 +30,12 @@ public class UserController {
         return ResponseEntity.ok(userService.patchProfile(user, body));
     }
 
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMe(@AuthenticationPrincipal User user) {
+        userService.deleteProfile(user);
+        return ResponseEntity.noContent().build();
+    }
+
     private static AuthResponse.UserDto toDto(User user) {
         return new AuthResponse.UserDto(
                 user.getId(),

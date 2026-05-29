@@ -10,6 +10,11 @@ public interface WritingRepository extends JpaRepository<Writing, String> {
     List<Writing> findByTypeAndStatusOrderByCreatedAtDesc(String type, String status);
     List<Writing> findByStatusOrderByCreatedAtDesc(String status);
 
-    @Query("SELECT w FROM Writing w WHERE LOWER(w.title) LIKE LOWER(CONCAT('%', :query, '%'))")
-    List<Writing> searchByTitle(String query);
+    @Query("""
+            SELECT w FROM Writing w
+            WHERE LOWER(w.title) LIKE LOWER(CONCAT('%', :query, '%'))
+              AND UPPER(w.status) = 'PUBLISHED'
+            ORDER BY w.createdAt DESC
+            """)
+    List<Writing> searchPublishedByTitle(String query);
 }
