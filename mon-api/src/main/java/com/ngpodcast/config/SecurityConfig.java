@@ -78,6 +78,7 @@ public class SecurityConfig {
                                     "/auth/reset-password",
                                     "/auth/reset-password/confirm")
                             .permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/newsletter/subscribe").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/files/**").permitAll();
                     auth.requestMatchers(HttpMethod.HEAD, "/files/**").permitAll();
                     /* « /mine » avant /** : sinon lecture anonyme autorisée sur /mine */
